@@ -20,10 +20,11 @@ def run(n_objects: int, bid_vector: npt.NDArray[np.int64]) -> AuctionResult:
 
     Args:
         n_objects: the number of objects for sale, the supply.
-        bid_vector: the profile of bids, in USD cents.
+        bid_vector: the profile of bids, in cents.
 
     Returns:
-        An AuctionResult with the boolean vector of winners and the vector of transfers in cents.
+        An AuctionResult with the vector that indicates the winning bids and the vector of transfers in cents.
+        Both vectors are of the same shape as bid_vector.
     """
     # Initialize the AuctionResult result.
 
