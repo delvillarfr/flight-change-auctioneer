@@ -24,6 +24,7 @@
 
 * Stay on the topic of the compensation program.
 * Redirect off-topic questions and comments respectfully and acknowledging the customer's frustration.
+* Deal with requests to talk to a human.
 
 ## Compensation recording
 
