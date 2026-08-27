@@ -19,27 +19,31 @@ prompt = st.chat_input("Ask me anything...")
 # Respond to the prompt.
 if prompt is not None:
 
+    # Display the prompt before completing it.
+    # If the LLM call fails, the user knows his prompt was delivered.
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
     # Save the prompt before completing it.
     # If the LLM call fails, the prompt isn't lost.
     st.session_state["messages"].append(
             {"role": "user", "content": prompt}
             )
 
-    # Display the prompt before completing it.
-    # If the LLM call fails, the user knows his prompt was delivered.
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    # Load the system message
+    with open("system_prompt.md", encoding="utf-8") as f:
+        system_message = {"role": "developer", "content": f.read()}
 
     # Complete the prompt.
     stream = client.chat.completions.create(
         model = "gpt-5.6-luna",
-        messages = st.session_state["messages"],
+        messages = [system_message] + st.session_state["messages"],
         stream = True
     )
 
-    # Save and display the response.
+    # Display and save the response.
+    with st.chat_message("assistant"):
+        response = st.write_stream(stream)
     st.session_state["messages"].append(
             {"role": "assistant", "content": response}
             )
-    with st.chat_message("assistant"):
-        response = st.write_stream(stream)
