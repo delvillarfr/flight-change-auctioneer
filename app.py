@@ -1,12 +1,30 @@
 import streamlit as st
 from openai import OpenAI
 
+from config import INSTRUCTIONS
+
 client = OpenAI(api_key = st.secrets["OPENAI_API_KEY"])
 
-# Initialize the message history.
-# It is the list of user and assistant messages in this session.
+# Load the system message
+system_messages = [
+        {"role": "developer", "content": INSTRUCTIONS},
+        {"role": "user", "content": "Begin now."}
+        ]
+
+# Start the conversation.
 if "messages" not in st.session_state:
-    st.session_state["messages"] = []
+
+    # Complete the system messages.
+    stream = client.chat.completions.create(
+        model = "gpt-5.6-luna",
+        messages = system_messages,
+        stream = False
+    )
+
+    # The completion begins the message history.
+    st.session_state["messages"] = [
+            {"role": "assistant", "content": stream.choices[0].message.content}
+            ]
 
 # Display the message history.
 for m in st.session_state["messages"]:
@@ -30,14 +48,11 @@ if prompt is not None:
             {"role": "user", "content": prompt}
             )
 
-    # Load the system message
-    with open("system_prompt.md", encoding="utf-8") as f:
-        system_message = {"role": "developer", "content": f.read()}
 
     # Complete the prompt.
     stream = client.chat.completions.create(
         model = "gpt-5.6-luna",
-        messages = [system_message] + st.session_state["messages"],
+        messages = system_messages + st.session_state["messages"],
         stream = True
     )
 
