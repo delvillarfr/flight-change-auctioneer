@@ -62,7 +62,7 @@ def run(
         winners = np.isin(np.arange(n_bids), id_winners).reshape(shape_bids)
 
         # Get the highest losing bid.
-        price = np.max(bids, where = ~winners)
+        price = np.max(bids[~winners])
 
         # Winners pay the highest losing bid; losers pay nothing.
         transfers = winners.astype(np.int64) * price
