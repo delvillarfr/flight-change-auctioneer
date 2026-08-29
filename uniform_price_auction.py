@@ -41,7 +41,7 @@ def run(
 
     # If the objects are not scarce, everyone loses and pays nothing
     if n_bids <= n_objects:
-        winners = np.full(shape_bids, False),
+        winners = np.full(shape_bids, False)
         transfers = np.full(shape_bids, 0)
     else:
         # Introduce a Uniform(0, 1) noise to bids.
