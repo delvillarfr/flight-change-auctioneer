@@ -51,11 +51,7 @@ def run(
 
         # Winners are the n_objects highest noisy bids.
         # np.argpartition suffices. np.argsort is easier to read.
-        id_winners = np.argpartition(
-                noisy_bids,
-                n_objects,
-                descending = True
-                )[: n_objects]
+        id_winners = np.argsort(noisy_bids, descending = True)[: n_objects]
         winners = np.isin(np.arange(n_bids), id_winners)
 
         # Get the highest losing bid.
