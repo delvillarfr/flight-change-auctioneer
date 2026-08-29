@@ -12,30 +12,30 @@ def run(
         bids: npt.NDArray[np.int64],
         seed: int = None
         ) -> Result:
-    """Execute the uniform price reverse auction.
+    """Execute the uniform price auction.
 
     The number of winning bids is at most n_objects.
-    The lowest bids win and pay the lowest losing bid.
+    The highest bids win and pay the highest losing bid.
 
-    If the highest winning bid equals the lowest losing bid,
+    If the highest losing bid equals the lowest winning bid,
     there are bids tied at the margin.
-    Winners are chosen uniformly at random, i.e.,
-    the probability of winning is the same for all bids at the margin.
+    Winners are chosen uniformly at random, meaning that the probability of
+    winning is the same for all bids at the margin.
 
-    If there are few bids (n_objects or less),
-    every bid wins and pays 0---the objects are not scarce.
+    If there are few bids (n_objects or less), every bid wins and pays 0.
+    The objects are not scarce.
 
     Args:
         n_objects: the number of objects for sale, the supply.
         bids: the profile of bids, in cents.
-        seed: the seed used by the random number generator
+        seed: the seed for the random number generator.
 
     Returns:
         A Result object with the vector that indicates the winning bids and the vector of transfers in cents.
         Both vectors are of the same shape as bids.
     """
     # We'll use the number of bids throughout.
-    n_bids = len(bids)
+    n_bids = bids.size
 
     # If the objects are not scarce, everyone wins and pays nothing
     if n_bids <= n_objects:
@@ -49,14 +49,19 @@ def run(
         rng = np.random.default_rng(seed)
         noisy_bids = bids + rng.uniform(size = n_bids)
 
-        # Winners are the n_objects lowest noisy bids.
-        id_winners = np.argpartition(noisy_bids, n_objects)[: n_objects]
+        # Winners are the n_objects highest noisy bids.
+        # np.argpartition suffices. np.argsort is easier to read.
+        id_winners = np.argpartition(
+                noisy_bids,
+                n_objects,
+                descending = True
+                )[: n_objects]
         winners = np.isin(np.arange(n_bids), id_winners)
 
-        # Get the lowest losing bid.
-        price = np.min(bids, where = ~winners)
+        # Get the highest losing bid.
+        price = np.max(bids, where = ~winners)
 
-        # Winners pay the lowest losing bid; losers pay nothing.
+        # Winners pay the highest losing bid; losers pay nothing.
         transfers = winners.astype(np.int64) * price
 
     return Result(winners = winners, transfers = transfers)
