@@ -27,32 +27,39 @@ def run(
 
     Args:
         n_objects: the number of objects for sale, the supply.
-        bids: the profile of bids, in cents.
+        bids: the array of bids, in cents.
         seed: the seed for the random number generator.
 
     Returns:
-        A Result object with the vector that indicates the winning bids and the vector of transfers in cents.
-        Both vectors are of the same shape as bids.
+        A Result object with a boolean array that indicates which bids won and
+        an array specifying each bid's transfer in cents.
+        Both arrays are of the same shape as bids.
     """
-    # We'll use the number of bids throughout.
+    # We'll use the number and shape of bids throughout.
     n_bids = bids.size
+    shape_bids = bids.shape
 
     # If the objects are not scarce, everyone wins and pays nothing
     if n_bids <= n_objects:
-        winners = np.full(n_bids, True),
-        transfers = np.full(n_bids, 0)
+        winners = np.full(shape_bids, True),
+        transfers = np.full(shape_bids, 0)
     else:
         # Introduce a Uniform(0, 1) noise to bids.
         # This preserves the ordering of unequal bids,
         # and orders equal bids randomly.
         # Every order occurs with equal probability.
         rng = np.random.default_rng(seed)
-        noisy_bids = bids + rng.uniform(size = n_bids)
+        noisy_bids = bids + rng.uniform(size = shape_bids)
 
         # Winners are the n_objects highest noisy bids.
         # np.argpartition suffices. np.argsort is easier to read.
-        id_winners = np.argsort(noisy_bids, descending = True)[: n_objects]
-        winners = np.isin(np.arange(n_bids), id_winners)
+        # np.argsort flattens the array of noisy bids.
+        id_winners = np.argsort(
+                noisy_bids,
+                axis = None,
+                descending = True
+                )[: n_objects]
+        winners = np.isin(np.arange(n_bids), id_winners).reshape(shape_bids)
 
         # Get the highest losing bid.
         price = np.max(bids, where = ~winners)
