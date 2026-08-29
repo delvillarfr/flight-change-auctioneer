@@ -2,43 +2,61 @@ import numpy as np
 import numpy.typing as npt
 from typing import TypedDict
 
-class AuctionResult(TypedDict):
+class Result(TypedDict):
     winners: npt.NDArray[np.bool_]
+    # Transfers are integers that represent cents.
     transfers: npt.NDArray[np.int64]
 
-def run(n_objects: int, bid_vector: npt.NDArray[np.int64]) -> AuctionResult:
+def run(
+        n_objects: int,
+        bids: npt.NDArray[np.int64],
+        seed: int = None
+        ) -> Result:
     """Execute the uniform price reverse auction.
 
-    There are at most n_objects winning bids.
+    The number of winning bids is at most n_objects.
     The lowest bids win and pay the lowest losing bid.
 
-    If the highest winning bid equals the lowest losing bid, there are bids tied at the margin.
-    Those that win are chosen randomly.
+    If the highest winning bid equals the lowest losing bid,
+    there are bids tied at the margin.
+    Winners are chosen uniformly at random, i.e.,
+    the probability of winning is the same for all bids at the margin.
 
-    If there are few bids (n_objects or less), every bid wins and pays 0.
-    The objects are not scarce.
+    If there are few bids (n_objects or less),
+    every bid wins and pays 0---the objects are not scarce.
 
     Args:
         n_objects: the number of objects for sale, the supply.
-        bid_vector: the profile of bids, in cents.
+        bids: the profile of bids, in cents.
+        seed: the seed used by the random number generator
 
     Returns:
-        An AuctionResult with the vector that indicates the winning bids and the vector of transfers in cents.
-        Both vectors are of the same shape as bid_vector.
+        A Result object with the vector that indicates the winning bids and the vector of transfers in cents.
+        Both vectors are of the same shape as bids.
     """
-    # Initialize the AuctionResult result.
+    # We'll use the number of bids throughout.
+    n_bids = len(bids)
 
-    # If the objects are not scarce, everyone wins and pays zero.
+    # If the objects are not scarce, everyone wins and pays nothing
+    if n_bids <= n_objects:
+        winners = np.full(n_bids, True),
+        transfers = np.full(n_bids, 0)
+    else:
+        # Introduce a Uniform(0, 1) noise to bids.
+        # This preserves the ordering of unequal bids,
+        # and orders equal bids randomly.
+        # Every order occurs with equal probability.
+        rng = np.random.default_rng(seed)
+        noisy_bids = bids + rng.uniform(size = n_bids)
 
-    # Get the histogram of bids.
+        # Winners are the n_objects lowest noisy bids.
+        id_winners = np.argpartition(noisy_bids, n_objects)[: n_objects]
+        winners = np.isin(np.arange(n_bids), id_winners)
 
-    # Get the highest winning bid.
+        # Get the lowest losing bid.
+        price = np.min(bids, where = ~winners)
 
-    # If the cumulative bid frequency at this bid equals n_objects,
-    # all bidders at and below this bid win and pay the lowest bid higher than it.
+        # Winners pay the lowest losing bid; losers pay nothing.
+        transfers = winners.astype(np.int64) * price
 
-    # Otherwise the cumulative bid frequency at this bid exceeds n_objects.
-    # It can't be under n_objects if the highest winning bid is correct.
-
-    # Select the highest winning bids at random to match n_objects.
-    # Winners pay the highest winning bid.
+    return Result(winners = winners, transfers = transfers)
