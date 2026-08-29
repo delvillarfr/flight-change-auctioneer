@@ -22,8 +22,8 @@ def run(
     Winners are chosen uniformly at random, meaning that the probability of
     winning is the same for all bids at the margin.
 
-    If there are few bids (n_objects or less), every bid wins and pays 0.
-    The objects are not scarce.
+    If there are few bids (n_objects or less), the objects are not scarce.
+    The seller keeps the objects and there are no transfers.
 
     Args:
         n_objects: the number of objects for sale, the supply.
@@ -39,9 +39,9 @@ def run(
     n_bids = bids.size
     shape_bids = bids.shape
 
-    # If the objects are not scarce, everyone wins and pays nothing
+    # If the objects are not scarce, everyone loses and pays nothing
     if n_bids <= n_objects:
-        winners = np.full(shape_bids, True),
+        winners = np.full(shape_bids, False),
         transfers = np.full(shape_bids, 0)
     else:
         # Introduce a Uniform(0, 1) noise to bids.
