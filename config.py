@@ -110,17 +110,19 @@ def load_system_prompt():
 TOOLS = [
     {
         "type": "function",
-        "name": "register_latest_offer",
-        "description": "Register the customer's latest offer. Use it every time the customer makes an offer. The return value is the registration status string.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "offer": {
-                    "type": "number",
-                    "description": "The customer's latest offer in dollars and cents. It is a number with at most two decimal places. Example: 157 dollars and 32 cents is 157.32; 204 dollars is 204 or 204.00.",
+        "function": {
+            "name": "register_latest_offer",
+            "description": "Register the customer's latest offer. Use it every time the customer makes an offer. The return value is the registration status string.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "offer": {
+                        "type": "number",
+                        "description": "The customer's latest offer in dollars and cents. It is a number with at most two decimal places. Example: 157 dollars and 32 cents is 157.32; 204 dollars is 204 or 204.00.",
+                    },
                 },
+                "required": ["offer"],
             },
-            "required": ["offer"],
         },
     }
 ]
