@@ -1,3 +1,11 @@
+import os
+import time
+
+from dotenv import load_dotenv
+import psycopg
+
+load_dotenv()
+
 def load_system_prompt():
     IDENTITY = """You are a composed and compassionate customer care representative for Northwest Airlines.
     You are addressing a customer whose flight is overbooked.
@@ -98,3 +106,43 @@ def load_system_prompt():
                 CONTEXT
                 ]
             )
+
+TOOLS = [
+    {
+        "type": "function",
+        "name": "register_latest_offer",
+        "description": "Register the customer's latest offer. Use it every time the customer makes an offer. The return value is the registration status string.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "offer": {
+                    "type": "number",
+                    "description": "The customer's latest offer in dollars and cents. It is a number with at most two decimal places. Example: 157 dollars and 32 cents is 157.32; 204 dollars is 204 or 204.00.",
+                },
+            },
+            "required": ["offer"],
+        },
+    }
+]
+
+def register_latest_offer(offer):
+    with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+        with conn.cursor() as cur:
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS bids (
+                    datetime integer PRIMARY KEY,
+                    bid integer
+                );
+                """)
+
+            # Pass data to fill a query placeholders and let Psycopg perform
+            # the correct conversion (no SQL injections!)
+            cur.execute(
+                "INSERT INTO bids (datetime, bid) VALUES (%s, %s)",
+                (time.time(), offer))
+
+            # Make the changes to the database persistent
+            conn.commit()
+
+    return "The offer has been registered. Please let the customer know."
