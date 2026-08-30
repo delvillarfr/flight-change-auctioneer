@@ -1,21 +1,58 @@
+import json
+
 import streamlit as st
 from openai import OpenAI
 
 from config import load_system_prompt, TOOLS, register_latest_offer
 
-def complete_messages(client, messages, stream):
-    """Complete the list of messages using the OpenAI Chat Completions API.
+def complete_messages(client, messages):
+    """Complete the message history using the OpenAI Chat Completions API.
     """
-    # Gather all messages and select their API-admitted fields.
-    api_messages = []
-    for m in messages:
-        api_messages.append({"role": m["role"], "content": m["content"]})
+    completion = []
+    while True:
 
-    return client.chat.completions.create(
-        model = "gpt-5.6-luna",
-        messages = api_messages,
-        stream = stream
-    )
+        # Gather all messages and select their API-admitted fields.
+        api_messages = []
+        for m in messages + completion:
+            api_message = {"role": m["role"], "content": m["content"]}
+            if "tool_calls" in m:
+                api_message["tool_calls"] = m["tool_calls"]
+            if "tool_call_id" in m:
+                api_message["tool_call_id"] = m["tool_call_id"]
+            api_messages.append(api_message)
+
+        response = client.chat.completions.create(
+            model = "gpt-5.6-luna",
+            messages = api_messages,
+            tools = TOOLS,
+            reasoning_effort = "none",
+        )
+        response_message = response.choices[0].message
+
+        if response_message.tool_calls is not None:
+            # Record the tool-call turn, then run each tool.
+            completion.append({
+                "role": "assistant",
+                "content": response_message.content,
+                "tool_calls": [c.model_dump() for c in response_message.tool_calls],
+                "visibility": "internal",
+            })
+            for call in response_message.tool_calls:
+                result = register_latest_offer(**json.loads(call.function.arguments))
+                completion.append({
+                    "role": "tool",
+                    "tool_call_id": call.id,
+                    "content": result,
+                    "visibility": "internal",
+                })
+
+        else:
+            completion.append({
+                "role": "assistant",
+                "content": response_message.content,
+                "visibility": "user-facing",
+            })
+            return completion
 
 # Start a client.
 client = OpenAI(api_key = st.secrets["OPENAI_API_KEY"])
@@ -38,17 +75,9 @@ if "messages" not in st.session_state:
     ]
 
     # Complete the system messages and add to history.
-    system_completion = complete_messages(
+    st.session_state["messages"] += complete_messages(
         client,
-        st.session_state["messages"],
-        stream = False
-    )
-    st.session_state["messages"].append(
-        {
-            "role": "assistant",
-            "content": system_completion.choices[0].message.content,
-            "visibility": "user-facing"
-        }
+        st.session_state["messages"]
     )
 
 # Display the message history.
@@ -75,15 +104,9 @@ if prompt is not None:
     )
 
     # Complete the prompt.
-    stream = complete_messages(
-        client,
-        st.session_state["messages"],
-        stream = True
-    )
+    completion = complete_messages(client, st.session_state["messages"])
+    st.session_state["messages"] += completion
 
-    # Display and save the response.
+    # Display the response.
     with st.chat_message("assistant"):
-        response = st.write_stream(stream)
-    st.session_state["messages"].append(
-        {"role": "assistant", "content": response, "visibility": "user-facing"}
-    )
+        st.markdown(completion[-1]["content"])
