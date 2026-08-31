@@ -224,12 +224,13 @@ def get_auction_results():
     # Run the auction
     participated = df["bid"].notna().values
 
+    # We are running a reverse auction---send negative bids.
     outcome = uniform_price_auction.run(
         6,
-        df.loc[participated, "bid"].astype(np.int64).values
+        - df.loc[participated, "bid"].astype(np.int64).values
     )
-    for col in ["winner", "transfer"]:
-        df.loc[participated, col] = outcome[col]
+    df.loc[participated, "winner"] = outcome["winner"]
+    df.loc[participated, "transfer"] = - outcome["transfer"]
 
     return df
 
