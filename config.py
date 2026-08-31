@@ -3,7 +3,11 @@ import random
 import time
 
 from dotenv import load_dotenv
+import numpy as np
+import pandas as pd
 import psycopg
+
+import uniform_price_auction
 
 load_dotenv()
 
@@ -183,8 +187,8 @@ def register_bid(bid, response):
             cur.execute(
                 """
                 UPDATE main
-                SET bid = %s
-                WHERE name = 'Anderson, Thomas'
+                    SET bid = %s
+                    WHERE name = 'Anderson, Thomas';
                 """,
                 (bid,)
             )
@@ -202,6 +206,32 @@ def rescind_offer():
         "The offer has been rescinded. Let the customer know."
     )
 
+def get_auction_results():
+    # Load the data as a dataframe.
+    with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM main;")
+            rows = cur.fetchall()
+            columns = [desc.name for desc in cur.description]
+
+    df = pd.DataFrame(rows, columns=columns)
+    df = df.astype({
+        "bid": np.float64,
+        "winner": np.bool_,
+        "transfer": np.float64
+    })
+
+    # Run the auction
+    participated = df["bid"].notna().values
+
+    outcome = uniform_price_auction.run(
+        6,
+        df.loc[participated, "bid"].astype(np.int64).values
+    )
+    for col in ["winner", "transfer"]:
+        df.loc[participated, col] = outcome[col]
+
+    return df
 
 TOOLS = [
     {

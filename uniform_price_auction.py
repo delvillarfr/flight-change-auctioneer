@@ -3,9 +3,9 @@ import numpy.typing as npt
 from typing import TypedDict
 
 class Result(TypedDict):
-    winners: npt.NDArray[np.bool_]
+    winner: npt.NDArray[np.bool_]
     # Transfers are integers that represent cents.
-    transfers: npt.NDArray[np.int64]
+    transfer: npt.NDArray[np.int64]
 
 def run(
         n_objects: int,
@@ -67,4 +67,4 @@ def run(
         # Winners pay the highest losing bid; losers pay nothing.
         transfers = winners.astype(np.int64) * price
 
-    return Result(winners = winners, transfers = transfers)
+    return Result(winner = winners, transfer = transfers)
