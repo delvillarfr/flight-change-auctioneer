@@ -4,7 +4,13 @@ import time
 import streamlit as st
 from openai import OpenAI
 
-from config import load_system_prompt, TOOLS, register_latest_offer
+from config import (
+    load_system_prompt,
+    TOOLS,
+    TOOL_FUNCTIONS,
+    register_latest_offer,
+    rescind_offer
+)
 
 
 def complete_messages(client, messages):
@@ -40,7 +46,8 @@ def complete_messages(client, messages):
                 "visibility": "internal",
             })
             for call in response_message.tool_calls:
-                result = register_latest_offer(**json.loads(call.function.arguments))
+                fn = TOOL_FUNCTIONS[call.function.name]
+                result = fn(**json.loads(call.function.arguments))
                 completion.append({
                     "role": "tool",
                     "tool_call_id": call.id,
@@ -64,6 +71,7 @@ def show_countdown():
         minutes, seconds = divmod(remaining, 60)
         st.info(f"Offering window closes in {minutes}:{seconds:02d}")
     else:
+        # Run auction
         st.warning("The offering window has closed.")
 
 
@@ -110,7 +118,6 @@ prompt = st.chat_input("Ask me anything...")
 
 # Respond to the prompt.
 if prompt is not None:
-
     # Display the prompt before completing it.
     # If the LLM call fails, the user knows his prompt was delivered.
     with st.chat_message("user"):
