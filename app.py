@@ -76,68 +76,72 @@ def show_countdown():
             # Run auction
             st.warning("The offering window has closed.")
 
+def main():
+    # Start a client.
+    client = OpenAI(api_key = st.secrets["OPENAI_API_KEY"])
 
-# Start a client.
-client = OpenAI(api_key = st.secrets["OPENAI_API_KEY"])
+    session_is_new = "messages" not in st.session_state
 
-# Pin the countdown bar to the viewport.
-st.markdown(COUNTDOWN_CSS, unsafe_allow_html = True)
+    # Sessions have a fixed time window to accept offers.
+    if session_is_new:
+        st.session_state["deadline"] = time.time() + 60
 
-# Show the countdown to the end of the offering window.
-show_countdown()
+    # Load the system prompt and complete it.
+    if session_is_new:
+        st.session_state["messages"] = [
+            {
+                "role": "developer",
+                "content": load_system_prompt(),
+                "visibility": "internal"
+            },
+            {
+                "role": "user",
+                "content": "Begin now.",
+                "visibility": "internal"
+            }
+        ]
 
-session_is_new = "messages" not in st.session_state
+        st.session_state["messages"] += complete_messages(
+            client,
+            st.session_state["messages"]
+        )
 
-# Sessions have a fixed time window to accept offers.
-if session_is_new:
-    st.session_state["deadline"] = time.time() + 60
+    # Pin the countdown bar to the viewport.
+    st.markdown(COUNTDOWN_CSS, unsafe_allow_html = True)
 
-# Load the system prompt and complete it.
-if session_is_new:
-    st.session_state["messages"] = [
-        {
-            "role": "developer",
-            "content": load_system_prompt(),
-            "visibility": "internal"
-        },
-        {
-            "role": "user",
-            "content": "Begin now.",
-            "visibility": "internal"
-        }
-    ]
+    # Show the countdown to the end of the offering window.
+    show_countdown()
 
-    st.session_state["messages"] += complete_messages(
-        client,
-        st.session_state["messages"]
-    )
+    # Display the user-facing messages.
+    for m in st.session_state["messages"]:
+        if m["visibility"] == "user-facing":
+            with st.chat_message(m["role"]):
+                st.markdown(m["content"])
 
-# Display the user-facing messages.
-for m in st.session_state["messages"]:
-    if m["visibility"] == "user-facing":
-        with st.chat_message(m["role"]):
-            st.markdown(m["content"])
+    # Add the prompt input box.
+    prompt = st.chat_input("Ask me anything...")
 
-# Add the prompt input box.
-prompt = st.chat_input("Ask me anything...")
+    # Respond to the prompt.
+    if prompt is not None:
+        # Display the prompt before completing it.
+        # If the LLM call fails, the user knows his prompt was delivered.
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
-# Respond to the prompt.
-if prompt is not None:
-    # Display the prompt before completing it.
-    # If the LLM call fails, the user knows his prompt was delivered.
-    with st.chat_message("user"):
-        st.markdown(prompt)
+        # Save the prompt before completing it.
+        # If the LLM call fails, the prompt isn't lost.
+        st.session_state["messages"].append(
+            {"role": "user", "content": prompt, "visibility": "user-facing"}
+        )
 
-    # Save the prompt before completing it.
-    # If the LLM call fails, the prompt isn't lost.
-    st.session_state["messages"].append(
-        {"role": "user", "content": prompt, "visibility": "user-facing"}
-    )
+        # Complete the prompt.
+        completion = complete_messages(client, st.session_state["messages"])
+        st.session_state["messages"] += completion
 
-    # Complete the prompt.
-    completion = complete_messages(client, st.session_state["messages"])
-    st.session_state["messages"] += completion
+        # Display the response.
+        with st.chat_message("assistant"):
+            st.markdown(completion[-1]["content"])
 
-    # Display the response.
-    with st.chat_message("assistant"):
-        st.markdown(completion[-1]["content"])
+
+if __name__ == "__main__":
+    main()
