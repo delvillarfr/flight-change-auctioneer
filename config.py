@@ -168,6 +168,7 @@ def register_latest_offer(offer):
 
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
+            cur.execute("DROP TABLE IF EXISTS main")
             cur.execute("""
                 CREATE TABLE main (
                     name varchar(40) PRIMARY KEY,
