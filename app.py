@@ -6,10 +6,11 @@ from openai import OpenAI
 
 from config import (
     load_system_prompt,
+    register_latest_offer,
+    rescind_offer,
     TOOLS,
     TOOL_FUNCTIONS,
-    register_latest_offer,
-    rescind_offer
+    COUNTDOWN_CSS
 )
 
 
@@ -66,26 +67,30 @@ def complete_messages(client, messages):
 @st.fragment(run_every = 1)
 def show_countdown():
     """Display the per-session offering window countdown, ticking every second."""
-    remaining = int(st.session_state["deadline"] - time.time())
-    if remaining > 0:
-        minutes, seconds = divmod(remaining, 60)
-        st.info(f"Offering window closes in {minutes}:{seconds:02d}")
-    else:
-        # Run auction
-        st.warning("The offering window has closed.")
+    with st.container(key = "countdown-bar"):
+        remaining = int(st.session_state["deadline"] - time.time())
+        if remaining > 0:
+            minutes, seconds = divmod(remaining, 60)
+            st.info(f"Offering window closes in {minutes}:{seconds:02d}")
+        else:
+            # Run auction
+            st.warning("The offering window has closed.")
 
 
 # Start a client.
 client = OpenAI(api_key = st.secrets["OPENAI_API_KEY"])
+
+# Pin the countdown bar to the viewport.
+st.markdown(COUNTDOWN_CSS, unsafe_allow_html = True)
+
+# Show the countdown to the end of the offering window.
+show_countdown()
 
 session_is_new = "messages" not in st.session_state
 
 # Sessions have a fixed time window to accept offers.
 if session_is_new:
     st.session_state["deadline"] = time.time() + 60
-
-# Show the countdown to the end of the offering window.
-show_countdown()
 
 # Load the system prompt and complete it.
 if session_is_new:
