@@ -1,9 +1,11 @@
 import json
+import time
 
 import streamlit as st
 from openai import OpenAI
 
 from config import load_system_prompt, TOOLS, register_latest_offer
+
 
 def complete_messages(client, messages):
     """Complete the message history using the OpenAI Chat Completions API.
@@ -54,13 +56,31 @@ def complete_messages(client, messages):
             })
             return completion
 
+@st.fragment(run_every = 1)
+def show_countdown():
+    """Display the per-session offering window countdown, ticking every second."""
+    remaining = int(st.session_state["deadline"] - time.time())
+    if remaining > 0:
+        minutes, seconds = divmod(remaining, 60)
+        st.info(f"Offering window closes in {minutes}:{seconds:02d}")
+    else:
+        st.warning("The offering window has closed.")
+
+
 # Start a client.
 client = OpenAI(api_key = st.secrets["OPENAI_API_KEY"])
 
-# Start the conversation.
-if "messages" not in st.session_state:
+session_is_new = "messages" not in st.session_state
 
-    # Initialize the message history.
+# Sessions have a fixed time window to accept offers.
+if session_is_new:
+    st.session_state["deadline"] = time.time() + 60
+
+# Show the countdown to the end of the offering window.
+show_countdown()
+
+# Load the system prompt and complete it.
+if session_is_new:
     st.session_state["messages"] = [
         {
             "role": "developer",
@@ -74,13 +94,12 @@ if "messages" not in st.session_state:
         }
     ]
 
-    # Complete the system messages and add to history.
     st.session_state["messages"] += complete_messages(
         client,
         st.session_state["messages"]
     )
 
-# Display the message history.
+# Display the user-facing messages.
 for m in st.session_state["messages"]:
     if m["visibility"] == "user-facing":
         with st.chat_message(m["role"]):
