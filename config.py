@@ -108,18 +108,7 @@ def load_system_prompt():
                 ]
             )
 
-def register_bid(bid, response):
-    """Register a bid.
-
-    Args:
-        bid: The positive bid to register.
-            If the bid does not participate, it equals -1.
-        response: The string response.
-
-    Returns:
-        response
-    """
-    # We'll first create and populate the table.
+def initialize_database():
     names = [
             "Anderson, Thomas",
             "Bennett, Sarah",
@@ -152,8 +141,15 @@ def register_bid(bid, response):
             "Peterson, Eric",
             "Sanders, Danielle",
     ]
-    bids = [random.randint(0, 1000) for i in range(30)]
-    bids[0] = bid
+    bids = []
+    for i in range(30):
+        if random.random() < 0.7:
+            bids.append(random.randint(0, 1000))
+        else:
+            bids.append(None)
+
+    # The user's bid starts as None.
+    bids[0] = None
 
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
@@ -166,17 +162,32 @@ def register_bid(bid, response):
                     transfer integer
                 );
             """)
-
-            # Pass data to fill a query placeholders and let Psycopg perform
-            # the correct conversion (no SQL injections!)
             cur.executemany(
                 "INSERT INTO main (name, bid) VALUES (%s, %s)",
                 list(zip(names, bids))
             )
 
-            # Make the changes to the database persistent
-            conn.commit()
+def register_bid(bid, response):
+    """Register a bid.
 
+    Args:
+        bid: The positive bid to register.
+            If the bid does not participate, it equals None.
+        response: The string response.
+
+    Returns:
+        response
+    """
+    with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE main
+                SET bid = %s
+                WHERE name = 'Anderson, Thomas'
+                """,
+                (bid,)
+            )
     return response
 
 def register_latest_offer(offer):
@@ -187,7 +198,7 @@ def register_latest_offer(offer):
 
 def rescind_offer():
     return register_bid(
-        -1,
+        None,
         "The offer has been rescinded. Let the customer know."
     )
 

@@ -6,6 +6,7 @@ from openai import OpenAI
 
 from config import (
     load_system_prompt,
+    initialize_database,
     register_latest_offer,
     rescind_offer,
     TOOLS,
@@ -82,12 +83,14 @@ def main():
 
     session_is_new = "messages" not in st.session_state
 
-    # Sessions have a fixed time window to accept offers.
     if session_is_new:
+
+        initialize_database()
+
+        # Sessions have a fixed time window to accept offers.
         st.session_state["deadline"] = time.time() + 60
 
-    # Load the system prompt and complete it.
-    if session_is_new:
+        # Load the system prompt and complete it.
         st.session_state["messages"] = [
             {
                 "role": "developer",
