@@ -1,4 +1,5 @@
 import os
+import random
 import time
 
 from dotenv import load_dotenv
@@ -128,21 +129,60 @@ TOOLS = [
 ]
 
 def register_latest_offer(offer):
+
+    # We'll also create and populate the table.
+    names = [
+            "Anderson, Thomas",
+            "Bennett, Sarah",
+            "Carter, James",
+            "Davis, Emily",
+            "Edwards, Robert",
+            "Foster, Jessica",
+            "Griffin, William",
+            "Harrison, Ashley",
+            "Jackson, Christopher",
+            "Kelly, Amanda",
+            "Lawson, Daniel",
+            "Mitchell, Rachel",
+            "Nelson, Matthew",
+            "O'Brien, Katherine",
+            "Parker, Joshua",
+            "Quinn, Megan",
+            "Reynolds, Andrew",
+            "Simmons, Lauren",
+            "Thompson, Brandon",
+            "Turner, Nicole",
+            "Walker, Tyler",
+            "Warren, Samantha",
+            "Wright, Justin",
+            "Young, Hannah",
+            "Coleman, Ryan",
+            "Fisher, Victoria",
+            "Hayes, Kevin",
+            "Morgan, Stephanie",
+            "Peterson, Eric",
+            "Sanders, Danielle",
+    ]
+    bids = [random.randint(0, 1000) for i in range(30)]
+    bids[0] = offer
+
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
-
             cur.execute("""
-                CREATE TABLE IF NOT EXISTS bids (
-                    datetime integer PRIMARY KEY,
-                    bid integer
+                CREATE TABLE main (
+                    name varchar(40) PRIMARY KEY,
+                    bid integer,
+                    winner boolean,
+                    transfer integer
                 );
-                """)
+            """)
 
             # Pass data to fill a query placeholders and let Psycopg perform
             # the correct conversion (no SQL injections!)
-            cur.execute(
-                "INSERT INTO bids (datetime, bid) VALUES (%s, %s)",
-                (time.time(), offer))
+            cur.executemany(
+                "INSERT INTO main (name, bid) VALUES (%s, %s)",
+                list(zip(names, bids))
+            )
 
             # Make the changes to the database persistent
             conn.commit()
