@@ -1,6 +1,7 @@
 import json
 import time
 
+import pandas as pd
 import streamlit as st
 from openai import OpenAI
 
@@ -9,6 +10,7 @@ from config import (
     initialize_database,
     register_latest_offer,
     rescind_offer,
+    get_auction_results,
     TOOLS,
     TOOL_FUNCTIONS,
     COUNTDOWN_CSS
@@ -69,13 +71,16 @@ def complete_messages(client, messages):
 def show_countdown():
     """Display the per-session offering window countdown, ticking every second."""
     with st.container(key = "countdown-bar"):
-        remaining = int(st.session_state["deadline"] - time.time())
+        remaining = st.session_state["deadline"] - time.time()
         if remaining > 0:
-            minutes, seconds = divmod(remaining, 60)
+            minutes, seconds = divmod(int(remaining), 60)
             st.info(f"Offering window closes in {minutes}:{seconds:02d}")
         else:
-            # Run auction
             st.warning("The offering window has closed.")
+            if not st.session_state["results_initiated"]:
+                st.session_state["results_initiated"] = True
+                st.rerun()
+
 
 def main():
     # Start a client.
@@ -86,6 +91,9 @@ def main():
     if session_is_new:
 
         initialize_database()
+
+        st.session_state["results_initiated"] = False
+        st.session_state["results_delivered"] = False
 
         # Sessions have a fixed time window to accept offers.
         st.session_state["deadline"] = time.time() + 60
@@ -145,6 +153,31 @@ def main():
         with st.chat_message("assistant"):
             st.markdown(completion[-1]["content"])
 
+    if (
+            st.session_state["results_initiated"]
+            and not st.session_state["results_delivered"]
+            and (time.time() >= st.session_state["deadline"])
+    ):
+        results = get_auction_results()
+
+        st.session_state["messages"].append({
+            "role": "developer",
+            "content": """
+                The results are in.
+                Communicate them to Thomas Anderson now:
+                """ + results.to_string(),
+            "visibility": "internal"
+        })
+
+        # Complete the prompt.
+        completion = complete_messages(client, st.session_state["messages"])
+        st.session_state["messages"] += completion
+
+        # Display the response.
+        with st.chat_message("assistant"):
+            st.markdown(completion[-1]["content"])
+
+        st.session_state["results_delivered"] = True
 
 if __name__ == "__main__":
     main()
