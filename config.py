@@ -108,29 +108,18 @@ def load_system_prompt():
                 ]
             )
 
-TOOLS = [
-    {
-        "type": "function",
-        "function": {
-            "name": "register_latest_offer",
-            "description": "Register the customer's latest offer. Use it every time the customer makes an offer. The return value is the registration status string.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "offer": {
-                        "type": "number",
-                        "description": "The customer's latest offer in dollars and cents. It is a number with at most two decimal places. Example: 157 dollars and 32 cents is 157.32; 204 dollars is 204 or 204.00.",
-                    },
-                },
-                "required": ["offer"],
-            },
-        },
-    }
-]
+def register_bid(bid, response):
+    """Register a bid.
 
-def register_latest_offer(offer):
+    Args:
+        bid: The positive bid to register.
+            If the bid does not participate, it equals -1.
+        response: The string response.
 
-    # We'll also create and populate the table.
+    Returns:
+        response
+    """
+    # We'll first create and populate the table.
     names = [
             "Anderson, Thomas",
             "Bennett, Sarah",
@@ -164,7 +153,7 @@ def register_latest_offer(offer):
             "Sanders, Danielle",
     ]
     bids = [random.randint(0, 1000) for i in range(30)]
-    bids[0] = offer
+    bids[0] = bid
 
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
@@ -188,4 +177,53 @@ def register_latest_offer(offer):
             # Make the changes to the database persistent
             conn.commit()
 
-    return "The offer has been registered. Please let the customer know."
+    return response
+
+def register_latest_offer(offer):
+    return register_bid(
+        offer,
+        "The offer has been registered. Let the customer know."
+    )
+
+def rescind_offer():
+    return register_bid(
+        -1,
+        "The offer has been rescinded. Let the customer know."
+    )
+
+
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "register_latest_offer",
+            "description": "Register the customer's latest offer. Use it every time the customer makes an offer but not when the customer rescinds it. The return value is the registration status string.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "offer": {
+                        "type": "number",
+                        "description": "The customer's latest offer in dollars and cents. It is a number with at most two decimal places. Example: 157 dollars and 32 cents is 157.32; 204 dollars is 204 or 204.00.",
+                    },
+                },
+                "required": ["offer"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "rescind_offer",
+            "description": "Rescind the customer's latest offer. Use it when the customer withdraws the offer. The return value is a confirmation string.",
+            "parameters": {
+                "type": "object",
+                "properties": {}
+            },
+        },
+    }
+]
+
+TOOL_FUNCTIONS = {
+    "register_latest_offer": register_latest_offer,
+    "rescind_offer": rescind_offer
+}
