@@ -227,3 +227,30 @@ TOOL_FUNCTIONS = {
     "register_latest_offer": register_latest_offer,
     "rescind_offer": rescind_offer
 }
+
+# Pin the countdown to the top of the viewport so it stays visible however long
+# the conversation grows.
+# .st-key-countdown-bar` is the class Streamlit adds for the keyed
+# container in show_countdown(); the main-container padding keeps the first
+# message from hiding under the fixed bar.
+COUNTDOWN_CSS = """
+<style>
+.st-key-countdown-bar {
+    position: fixed;
+    top: 3.75rem;
+    left: 0;
+    right: 0;
+    z-index: 999990;
+    margin: 0 auto;
+    max-width: 46rem;
+    padding: 0 1rem;
+    background: var(--background-color, #ffffff);
+}
+.st-key-countdown-bar div[data-testid="stAlert"] {
+    margin: 0.35rem 0;
+}
+[data-testid="stMainBlockContainer"], .block-container {
+    padding-top: 5rem;
+}
+</style>
+"""
