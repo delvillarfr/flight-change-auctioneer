@@ -88,6 +88,7 @@ def main():
 
         st.session_state["results_initiated"] = False
         st.session_state["results_delivered"] = False
+        st.session_state["results_df"] = None
 
         # Sessions have a fixed time window to accept offers.
         st.session_state["deadline"] = time.time() + 0.5*60
@@ -177,12 +178,14 @@ def main():
         with st.chat_message("assistant"):
             st.markdown(completion[-1]["content"])
 
+        st.session_state["results_df"] = results
         st.session_state["results_delivered"] = True
 
+    # Unveil the simulation and show the database.
+    if st.session_state["results_df"] is not None:
         with st.chat_message("assistant"):
-            # Unveil the simulation and show the database
             st.markdown("You just played the role of **" + st.session_state["customer_id"] + "**.")
-            st.dataframe(results.sort_values("offer"))
+            st.dataframe(st.session_state["results_df"].sort_values("offer"))
 
 if __name__ == "__main__":
     main()
