@@ -5,18 +5,7 @@ import pandas as pd
 import streamlit as st
 from openai import OpenAI
 
-from config import (
-    load_system_prompt,
-    initialize_database,
-    load_customer_info,
-    register_latest_offer,
-    rescind_offer,
-    get_auction_results,
-    TOOLS,
-    TOOL_FUNCTIONS,
-    FIRST_MESSAGE,
-    COUNTDOWN_CSS
-)
+import config
 
 def complete_messages(client, messages):
     """Complete the message history using the OpenAI Chat Completions API.
@@ -37,7 +26,7 @@ def complete_messages(client, messages):
         response = client.chat.completions.create(
             model = "gpt-5.6-luna",
             messages = api_messages,
-            tools = TOOLS,
+            tools = config.TOOLS,
             reasoning_effort = "none",
         )
         response_message = response.choices[0].message
@@ -52,7 +41,7 @@ def complete_messages(client, messages):
             })
             # We specify the first function's argument, customer_id, not the LLM.
             for call in response_message.tool_calls:
-                fn = TOOL_FUNCTIONS[call.function.name]
+                fn = config.TOOL_FUNCTIONS[call.function.name]
                 result = fn(
                         st.session_state["customer_id"],
                         **json.loads(call.function.arguments)
@@ -94,8 +83,8 @@ def main():
 
     if session_is_new:
 
-        initialize_database()
-        st.session_state["customer_id"] = load_customer_info()
+        config.initialize_database()
+        st.session_state["customer_id"] = config.load_customer_info()
 
         st.session_state["results_initiated"] = False
         st.session_state["results_delivered"] = False
@@ -107,7 +96,7 @@ def main():
         st.session_state["messages"] = [
             {
                 "role": "developer",
-                "content": load_system_prompt(),
+                "content": config.load_system_prompt(),
                 "visibility": "internal"
             },
             {
@@ -117,13 +106,13 @@ def main():
             },
             {
                 "role": "assistant",
-                "content": FIRST_MESSAGE,
+                "content": config.FIRST_MESSAGE,
                 "visibility": "user-facing"
             }
         ]
 
     # Pin the countdown bar to the viewport.
-    st.markdown(COUNTDOWN_CSS, unsafe_allow_html = True)
+    st.markdown(config.COUNTDOWN_CSS, unsafe_allow_html = True)
 
     # Show the countdown to the end of the offering window.
     show_countdown()
@@ -163,7 +152,7 @@ def main():
             and not st.session_state["results_delivered"]
             and (time.time() >= st.session_state["deadline"])
     ):
-        results = get_auction_results(st.session_state["customer_id"])
+        results = config.get_auction_results(st.session_state["customer_id"])
 
         st.session_state["messages"].append({
             "role": "developer",
