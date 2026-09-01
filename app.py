@@ -13,6 +13,7 @@ from config import (
     get_auction_results,
     TOOLS,
     TOOL_FUNCTIONS,
+    FIRST_MESSAGE,
     COUNTDOWN_CSS
 )
 
@@ -96,7 +97,7 @@ def main():
         st.session_state["results_delivered"] = False
 
         # Sessions have a fixed time window to accept offers.
-        st.session_state["deadline"] = time.time() + 60
+        st.session_state["deadline"] = time.time() + 0.5*60
 
         # Load the system prompt and complete it.
         st.session_state["messages"] = [
@@ -106,16 +107,11 @@ def main():
                 "visibility": "internal"
             },
             {
-                "role": "user",
-                "content": "Begin now.",
-                "visibility": "internal"
+                "role": "assistant",
+                "content": FIRST_MESSAGE,
+                "visibility": "user-facing"
             }
         ]
-
-        st.session_state["messages"] += complete_messages(
-            client,
-            st.session_state["messages"]
-        )
 
     # Pin the countdown bar to the viewport.
     st.markdown(COUNTDOWN_CSS, unsafe_allow_html = True)
@@ -164,7 +160,9 @@ def main():
             "role": "developer",
             "content": """
                 The results are in.
-                Communicate them to Thomas Anderson now:
+                Please communicate them.
+                Also ask the passenger to go to their Northwest Airlines portal to choose their seat.
+                Add in mock url https://northwestairlines.mock/seat-selection
                 """ + results.to_string(),
             "visibility": "internal"
         })
