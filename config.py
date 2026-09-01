@@ -307,22 +307,32 @@ def get_auction_results(customer_id):
             cur.execute("SELECT * FROM main;")
             rows = cur.fetchall()
             columns = [desc.name for desc in cur.description]
-    df = pd.DataFrame(rows, columns=columns)
-    df = df.astype({
-        "bid": np.float64,
-        "winner": np.bool_,
-        "transfer": np.float64
-    })
+            df = pd.DataFrame(rows, columns=columns)
+            df = df.astype({
+                "bid": np.float64,
+                "winner": np.bool_,
+                "transfer": np.float64
+            })
 
-    # Run the auction
-    participated = df["bid"].notna().values
-    # We are running a reverse auction---send negative bids.
-    outcome = uniform_price_auction.run(
-        6,
-        - df.loc[participated, "bid"].astype(np.int64).values
-    )
-    df.loc[participated, "winner"] = outcome["winner"]
-    df.loc[participated, "transfer"] = - outcome["transfer"]
+            # Run the auction
+            participated = df["bid"].notna().values
+            # We are running a reverse auction---send negative bids.
+            outcome = uniform_price_auction.run(
+                6,
+                - df.loc[participated, "bid"].astype(np.int64).values
+            )
+            df.loc[participated, "winner"] = outcome["winner"]
+            df.loc[participated, "transfer"] = - outcome["transfer"]
+
+            # Update the database with the auction results.
+            cur.executemany(
+                """
+                    UPDATE main
+                        SET winner = %s, transfer = %s
+                        WHERE name = %s;
+                """,
+                df.loc[participated, ["winner", "transfer", "name"]].values.tolist()
+            )
 
     return df.loc[df["name"] == customer_id, ["bid", "winner", "transfer"]]
 
