@@ -203,7 +203,7 @@ def initialize_database():
             "Sanders, Danielle",
     ]
     bids = len(names) * [None]
-    participated = len(names) * [False]
+    contacted = len(names) * [False]
 
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
@@ -212,14 +212,14 @@ def initialize_database():
                 CREATE TABLE main (
                     name varchar(40) PRIMARY KEY,
                     bid integer,
-                    participated boolean,
+                    contacted boolean,
                     winner boolean,
                     transfer integer
                 );
             """)
             cur.executemany(
-                "INSERT INTO main (name, bid, participated) VALUES (%s, %s, %s)",
-                list(zip(names, bids, participated))
+                "INSERT INTO main (name, bid, contacted) VALUES (%s, %s, %s)",
+                list(zip(names, bids, contacted))
             )
 
 def load_customer_info():
