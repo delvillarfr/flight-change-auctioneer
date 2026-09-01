@@ -63,7 +63,7 @@ def load_system_prompt():
       5. If the customer wants to talk to a human, politely decline and acknowledge that no human can be reached at Northwest Airlines.
       6. Use plain, exact words, not corporate abstractions like "network", or "experiences". If a term is technical, define it in the same breath.
       7. When expressing money amounts, use USD, not the dollar sign $.
-      8. Use the formal address Mr/Ms. Last-name if you have to address customers by their name.
+      8. Don't address the customer by name unless you need to. If you do, use the formal address Mr/Ms. Last-name.
     """
 
     CONTEXT = """
@@ -202,7 +202,7 @@ def initialize_database():
             "Peterson, Eric",
             "Sanders, Danielle",
     ]
-    bids = len(names) * [None]
+    offers = len(names) * [None]
     contacted = len(names) * [False]
 
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
@@ -211,15 +211,15 @@ def initialize_database():
             cur.execute("""
                 CREATE TABLE main (
                     name varchar(40) PRIMARY KEY,
-                    bid integer,
+                    offer integer,
                     contacted boolean,
                     winner boolean,
-                    transfer integer
+                    compensation integer
                 );
             """)
             cur.executemany(
-                "INSERT INTO main (name, bid, contacted) VALUES (%s, %s, %s)",
-                list(zip(names, bids, contacted))
+                "INSERT INTO main (name, offer, contacted) VALUES (%s, %s, %s)",
+                list(zip(names, offers, contacted))
             )
 
 def load_customer_info():
@@ -251,14 +251,14 @@ def load_customer_info():
 
     return customer_id
 
-def register_bid(customer_id, bid, response):
-    """Register a bid.
+def register_offer(customer_id, offer, response):
+    """Register an offer.
 
     Args:
         customer_id: The customer's unique identifier.
             We're using the name right now.
-        bid: The positive bid to register.
-            If the bid does not participate, it equals None.
+        offer: The positive offer to register.
+            If the offer does not participate, it equals None.
         response: The string response.
 
     Returns:
@@ -269,34 +269,34 @@ def register_bid(customer_id, bid, response):
             cur.execute(
                 """
                 UPDATE main
-                    SET bid = %s
+                    SET offer = %s
                     WHERE name = %s;
                 """,
-                (bid, customer_id)
+                (offer, customer_id)
             )
     return response
 
 def register_latest_offer(customer_id, offer):
-    return register_bid(
+    return register_offer(
         customer_id,
         offer,
         "The offer has been registered. Let the customer know."
     )
 
 def rescind_offer(customer_id):
-    return register_bid(
+    return register_offer(
         customer_id,
         None,
         "The offer has been rescinded. Let the customer know."
     )
 
-def get_auction_results(customer_id):
+def get_auction_results():
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
-            # Fill in bids of uncontacted passengers randomly
+            # Fill in offers of uncontacted passengers randomly
             cur.execute("""
                     UPDATE main
-                        SET bid = CASE
+                        SET offer = CASE
                             WHEN random() < 0.33 THEN NULL
                             ELSE random() * 1000
                         END
@@ -309,32 +309,32 @@ def get_auction_results(customer_id):
             columns = [desc.name for desc in cur.description]
             df = pd.DataFrame(rows, columns=columns)
             df = df.astype({
-                "bid": np.float64,
+                "offer": np.float64,
                 "winner": np.bool_,
-                "transfer": np.float64
+                "compensation": np.float64
             })
 
             # Run the auction
-            participated = df["bid"].notna().values
-            # We are running a reverse auction---send negative bids.
+            participated = df["offer"].notna().values
+            # We are running a reverse auction---send negative offers.
             outcome = uniform_price_auction.run(
                 6,
-                - df.loc[participated, "bid"].astype(np.int64).values
+                - df.loc[participated, "offer"].astype(np.int64).values
             )
             df.loc[participated, "winner"] = outcome["winner"]
-            df.loc[participated, "transfer"] = - outcome["transfer"]
+            df.loc[participated, "compensation"] = - outcome["transfer"]
 
             # Update the database with the auction results.
             cur.executemany(
                 """
                     UPDATE main
-                        SET winner = %s, transfer = %s
+                        SET winner = %s, compensation = %s
                         WHERE name = %s;
                 """,
-                df.loc[participated, ["winner", "transfer", "name"]].values.tolist()
+                df.loc[participated, ["winner", "compensation", "name"]].values.tolist()
             )
 
-    return df.loc[df["name"] == customer_id, ["bid", "winner", "transfer"]]
+    return df
 
 TOOLS = [
     {
