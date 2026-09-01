@@ -201,15 +201,8 @@ def initialize_database():
             "Peterson, Eric",
             "Sanders, Danielle",
     ]
-    bids = []
-    for i in range(30):
-        if random.random() < 0.7:
-            bids.append(random.randint(0, 1000))
-        else:
-            bids.append(None)
-
-    # The user's bid starts as None.
-    bids[0] = None
+    bids = len(names) * [None]
+    participated = len(names) * [False]
 
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
@@ -218,13 +211,14 @@ def initialize_database():
                 CREATE TABLE main (
                     name varchar(40) PRIMARY KEY,
                     bid integer,
+                    participated boolean,
                     winner boolean,
                     transfer integer
                 );
             """)
             cur.executemany(
-                "INSERT INTO main (name, bid) VALUES (%s, %s)",
-                list(zip(names, bids))
+                "INSERT INTO main (name, bid, participated) VALUES (%s, %s, %s)",
+                list(zip(names, bids, participated))
             )
 
 def load_customer_info():
