@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta, timezone
 import os
 import random
 import time
+import uuid
 
 from dotenv import load_dotenv
 import numpy as np
@@ -168,6 +170,49 @@ def load_system_prompt():
                 EXAMPLES
                 ]
             )
+
+def get_auction_end():
+    """Check if there is an auction underway and create a new one if there isn't.
+    """
+    try:
+        with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+            with conn.cursor() as cur:
+                # Determine if there is an auction underway
+                cur.execute("""
+                    SELECT * FROM auctions
+                        WHERE ends >= NOW() + INTERVAL '3 minutes';
+                """)
+                auction_underway = cur.fetchone()
+
+                if auction_underway is None:
+                    starts = datetime.now(timezone.utc)
+                    ends = starts + timedelta(minutes = 5)
+
+                    cur.execute("""
+                            INSERT INTO auctions (id, starts, ends)
+                                VALUES (%s, %s, %s)
+                        """,
+                        (uuid.uuid4(), starts, ends)
+                    )
+                else:
+                    # End time is the third and last element of auction_underway.
+                    ends = auction_underway[-1]
+
+        return ends
+
+    # Create the auctions table if it does not exist
+    except psycopg.errors.UndefinedTable:
+        with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE auctions (
+                        id uuid PRIMARY KEY,
+                        starts timestamptz,
+                        ends timestamptz
+                    );
+                """)
+        return get_auction_end()
+    
 
 def initialize_database():
     names = [
