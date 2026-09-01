@@ -227,6 +227,19 @@ def initialize_database():
                 list(zip(names, bids))
             )
 
+def load_customer_info():
+    """ Select a random passenger from main.
+
+    Returns:
+        The customer's unique identifier.
+    """
+    with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT name FROM main ORDER BY RANDOM() LIMIT 1;")
+            customer_id = cur.fetchone()[0]
+
+    return customer_id
+
 def register_bid(bid, response):
     """Register a bid.
 
