@@ -223,15 +223,30 @@ def initialize_database():
             )
 
 def load_customer_info():
-    """ Select a random passenger from main.
+    """ Select a random passenger who hasn't been contacted from main.
 
     Returns:
         The customer's unique identifier.
     """
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT name FROM main ORDER BY RANDOM() LIMIT 1;")
+            # Select a random customer who hasn't been contacted.
+            cur.execute("""
+                SELECT name FROM main
+                    WHERE NOT contacted
+                    ORDER BY RANDOM()
+                    LIMIT 1;
+            """)
             customer_id = cur.fetchone()[0]
+            # Update the table---the customer has been contacted.
+            cur.execute("""
+                UPDATE main
+                    SET contacted = %s
+                    WHERE name = %s;
+                """,
+                (True, customer_id)
+            )
+                            
             
 
     return customer_id
