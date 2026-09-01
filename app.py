@@ -152,7 +152,11 @@ def main():
             and not st.session_state["results_delivered"]
             and (time.time() >= st.session_state["deadline"])
     ):
-        results = config.get_auction_results(st.session_state["customer_id"])
+        results = config.get_auction_results()
+        customer_results = results.loc[
+            results["name"] == st.session_state["customer_id"],
+            ["offer", "winner", "compensation"]
+        ]
 
         st.session_state["messages"].append({
             "role": "developer",
@@ -161,7 +165,7 @@ def main():
                 Please communicate them.
                 Also ask the passenger to go to their Northwest Airlines portal to choose their seat.
                 Add in mock url https://northwestairlines.mock/seat-selection
-                """ + results.to_string(),
+                """ + customer_results.to_string(),
             "visibility": "internal"
         })
 
@@ -174,6 +178,11 @@ def main():
             st.markdown(completion[-1]["content"])
 
         st.session_state["results_delivered"] = True
+
+        with st.chat_message("assistant"):
+            # Unveil the simulation and show the database
+            st.markdown("You just played the role of **" + st.session_state["customer_id"] + "**.")
+            st.dataframe(results.sort_values("offer"))
 
 if __name__ == "__main__":
     main()
