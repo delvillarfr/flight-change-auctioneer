@@ -185,9 +185,9 @@ def get_auction_end():
                 auction_underway = cur.fetchone()
 
                 if auction_underway is None:
+                    # I want to initialize the main database here.
                     starts = datetime.now(timezone.utc)
                     ends = starts + timedelta(minutes = 5)
-
                     cur.execute("""
                             INSERT INTO auctions (id, starts, ends)
                                 VALUES (%s, %s, %s)
@@ -247,8 +247,11 @@ def initialize_database():
             "Peterson, Eric",
             "Sanders, Danielle",
     ]
-    offers = len(names) * [None]
-    contacted = len(names) * [False]
+    n = len(names)
+    contacted = n * [False]
+    offers = [random.randint(0, 1000) for i in range(n)]
+    for i in random.sample(range(n), int(n/3)):
+        offers[i] = None
 
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
@@ -286,10 +289,10 @@ def load_customer_info():
             # Update the table---the customer has been contacted.
             cur.execute("""
                 UPDATE main
-                    SET contacted = %s
+                    SET contacted = %s, offer = %s
                     WHERE name = %s;
                 """,
-                (True, customer_id)
+                (True, None, customer_id)
             )
                             
             
@@ -338,16 +341,6 @@ def rescind_offer(customer_id):
 def get_auction_results():
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
-            # Fill in offers of uncontacted passengers randomly
-            cur.execute("""
-                    UPDATE main
-                        SET offer = CASE
-                            WHEN random() < 0.33 THEN NULL
-                            ELSE random() * 1000
-                        END
-                        WHERE NOT contacted;
-            """)
-
             # Load the data as a dataframe.
             cur.execute("SELECT * FROM main;")
             rows = cur.fetchall()
