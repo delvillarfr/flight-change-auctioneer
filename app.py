@@ -8,6 +8,7 @@ from openai import OpenAI
 from config import (
     load_system_prompt,
     initialize_database,
+    load_customer_info,
     register_latest_offer,
     rescind_offer,
     get_auction_results,
@@ -16,7 +17,6 @@ from config import (
     FIRST_MESSAGE,
     COUNTDOWN_CSS
 )
-
 
 def complete_messages(client, messages):
     """Complete the message history using the OpenAI Chat Completions API.
@@ -50,9 +50,13 @@ def complete_messages(client, messages):
                 "tool_calls": [c.model_dump() for c in response_message.tool_calls],
                 "visibility": "internal",
             })
+            # We specify the first function's argument, customer_id, not the LLM.
             for call in response_message.tool_calls:
                 fn = TOOL_FUNCTIONS[call.function.name]
-                result = fn(**json.loads(call.function.arguments))
+                result = fn(
+                        st.session_state["customer_id"],
+                        **json.loads(call.function.arguments)
+                        )
                 completion.append({
                     "role": "tool",
                     "tool_call_id": call.id,
@@ -82,7 +86,6 @@ def show_countdown():
                 st.session_state["results_initiated"] = True
                 st.rerun()
 
-
 def main():
     # Start a client.
     client = OpenAI(api_key = st.secrets["OPENAI_API_KEY"])
@@ -92,6 +95,7 @@ def main():
     if session_is_new:
 
         initialize_database()
+        st.session_state["customer_id"] = load_customer_info()
 
         st.session_state["results_initiated"] = False
         st.session_state["results_delivered"] = False
@@ -104,6 +108,11 @@ def main():
             {
                 "role": "developer",
                 "content": load_system_prompt(),
+                "visibility": "internal"
+            },
+            {
+                "role": "developer",
+                "content": "The customer's name is " + st.session_state["customer_id"],
                 "visibility": "internal"
             },
             {
@@ -154,7 +163,7 @@ def main():
             and not st.session_state["results_delivered"]
             and (time.time() >= st.session_state["deadline"])
     ):
-        results = get_auction_results()
+        results = get_auction_results(st.session_state["customer_id"])
 
         st.session_state["messages"].append({
             "role": "developer",

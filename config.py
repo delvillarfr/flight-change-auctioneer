@@ -231,13 +231,16 @@ def load_customer_info():
         with conn.cursor() as cur:
             cur.execute("SELECT name FROM main ORDER BY RANDOM() LIMIT 1;")
             customer_id = cur.fetchone()[0]
+            
 
     return customer_id
 
-def register_bid(bid, response):
+def register_bid(customer_id, bid, response):
     """Register a bid.
 
     Args:
+        customer_id: The customer's unique identifier.
+            We're using the name right now.
         bid: The positive bid to register.
             If the bid does not participate, it equals None.
         response: The string response.
@@ -251,25 +254,27 @@ def register_bid(bid, response):
                 """
                 UPDATE main
                     SET bid = %s
-                    WHERE name = 'Anderson, Thomas';
+                    WHERE name = %s;
                 """,
-                (bid,)
+                (bid, customer_id)
             )
     return response
 
-def register_latest_offer(offer):
+def register_latest_offer(customer_id, offer):
     return register_bid(
+        customer_id,
         offer,
         "The offer has been registered. Let the customer know."
     )
 
-def rescind_offer():
+def rescind_offer(customer_id):
     return register_bid(
+        customer_id,
         None,
         "The offer has been rescinded. Let the customer know."
     )
 
-def get_auction_results():
+def get_auction_results(customer_id):
     # Load the data as a dataframe.
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
@@ -295,7 +300,7 @@ def get_auction_results():
     df.loc[participated, "winner"] = outcome["winner"]
     df.loc[participated, "transfer"] = - outcome["transfer"]
 
-    return df.loc[df["name"] == "Anderson, Thomas", ["bid", "winner", "transfer"]]
+    return df.loc[df["name"] == customer_id, ["bid", "winner", "transfer"]]
 
 TOOLS = [
     {
