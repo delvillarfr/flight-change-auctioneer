@@ -291,13 +291,22 @@ def rescind_offer(customer_id):
     )
 
 def get_auction_results(customer_id):
-    # Load the data as a dataframe.
     with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
         with conn.cursor() as cur:
+            # Fill in bids of uncontacted passengers randomly
+            cur.execute("""
+                    UPDATE main
+                        SET bid = CASE
+                            WHEN random() < 0.33 THEN NULL
+                            ELSE random() * 1000
+                        END
+                        WHERE NOT contacted;
+            """)
+
+            # Load the data as a dataframe.
             cur.execute("SELECT * FROM main;")
             rows = cur.fetchall()
             columns = [desc.name for desc in cur.description]
-
     df = pd.DataFrame(rows, columns=columns)
     df = df.astype({
         "bid": np.float64,
@@ -307,7 +316,6 @@ def get_auction_results(customer_id):
 
     # Run the auction
     participated = df["bid"].notna().values
-
     # We are running a reverse auction---send negative bids.
     outcome = uniform_price_auction.run(
         6,
