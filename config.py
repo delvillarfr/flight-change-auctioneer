@@ -251,7 +251,7 @@ def initialize_auction():
                 # Determine if there is an auction underway
                 cur.execute("""
                     SELECT * FROM auctions
-                        WHERE ends >= NOW() + INTERVAL '3 minutes';
+                        WHERE ends > NOW();
                 """)
                 auction_underway = cur.fetchone()
 
