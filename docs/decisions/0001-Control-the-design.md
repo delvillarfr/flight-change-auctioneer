@@ -15,7 +15,7 @@ John Ousterhout's "A Philosophy of Software Design" captivated me, and I intend 
 * Make modules deep: powerful and with a simple interface.
 * Make modules general-purpose.
 * Join functionalities that share information or repeat themselves.
-* Accomodate or allow uncommon behavior to not raise exceptions.
+* Accommodate or allow uncommon behavior so it does not raise exceptions.
 * Use comments in implementations to abstract (what) and contextualize (why).
 * Choose names that abstract their objects.
 * Test, but don't lead the development with tests.

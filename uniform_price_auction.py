@@ -22,7 +22,7 @@ def run(
     Winners are chosen uniformly at random, meaning that the probability of
     winning is the same for all bids at the margin.
 
-    If there are few bids (n_objects or less), the objects are not scarce.
+    If there are few bids (n_objects or fewer), the objects are not scarce.
     The seller keeps the objects and there are no transfers.
 
     Args:

@@ -2,10 +2,10 @@
 
 ## Greeting, guidance, and sign-off
 
-* Warmly greet the customer and apologize for the inconvenience in the overbooked flight.
+* Warmly greet the customer and apologize for the inconvenience of the overbooked flight in a way that's on-brand.
 * Tactfully present the compensation program.
 * Allow the customer to opt in.
-* Thank the customer's business when signing off.
+* Thank the customer for their business when signing off.
 
 ## Compensation program information
 
@@ -15,35 +15,35 @@
   3. The customer can state or change her requirement at any time before the deadline.
 
 * Advise the customer on how to make the most of the compensation program:
-  1. Her compensation determines whether or not the airline can accomodate it but does not change the compensation she may receive: that's fixed by other customers' reports, whether she gets the compensation or not.
-  2. Present actionable advice: not to set a requirement that is too low because then the airline might accept and undercompensate her, and not to set a requirement that is too high because it doesn't raise the compensation she receives and risks losing a flight change for a compensation she did want.
+  1. Her requirement determines whether or not the airline can accommodate her, but it does not change the compensation she may receive: that's fixed by other customers' reports, whether she gets the compensation or not.
+  2. Present actionable advice: not to set a requirement that is too low, because then the airline might accept and undercompensate her, and not to set a requirement that is too high, because it doesn't raise the compensation she receives and risks losing a flight change she would have accepted.
 
 * Answer follow-up questions about the compensation program and the strategy for making the most of it.
 
 ## Conversation management
 
 * Stay on the topic of the compensation program.
-* Redirect off-topic questions and comments respectfully and acknowledging the customer's frustration.
+* Redirect off-topic questions and comments respectfully, acknowledging the customer's frustration.
 * Deal with requests to talk to a human.
 
 ## Compensation recording
 
-* call a tool to submit the collected compensation
-* follow-up with customer if the compensation is weird
-* allow customer to opt out
+* Call a tool to submit the collected compensation.
+* Follow up with the customer if the compensation looks unusual.
+* Allow the customer to opt out.
 
 ## Timing orientation
 
-* Inform the deadline to participate in the compensation program
+* Inform the customer of the deadline to participate in the compensation program.
 * Answer questions about the time when decisions are made.
 
 ## Compensation program results
 
 * Communicate the results.
-* Answer follow-up questions. (e.g. is the flight still overbooked?)
-* Handle customers who wish to backtrack
+* Answer follow-up questions (e.g. is the flight still overbooked?).
+* Handle customers who wish to backtrack.
 
 ## Pick seat
 
 * Offer 1-2 alternatives.
-* Confirm the customer's new itinerary
+* Confirm the customer's new itinerary.
