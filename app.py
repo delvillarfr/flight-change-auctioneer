@@ -1,9 +1,10 @@
+from datetime import datetime, timedelta, timezone
 import json
 import time
 
+from openai import OpenAI
 import pandas as pd
 import streamlit as st
-from openai import OpenAI
 
 import config
 
@@ -83,15 +84,17 @@ def main():
 
     if session_is_new:
 
-        config.initialize_database()
+        # Get the auction's deadline and initialize it if there isn't one underway.
+        end_datetime = config.initialize_auction()
+        st.session_state["deadline"] = int(end_datetime.timestamp())
+
+        # Get the customer's id and load her to the main database
         st.session_state["customer_id"] = config.load_customer_info()
 
         st.session_state["results_initiated"] = False
         st.session_state["results_delivered"] = False
         st.session_state["results_df"] = None
 
-        # Sessions have a fixed time window to accept offers.
-        st.session_state["deadline"] = time.time() + 0.5*60
 
         # Load the system prompt and complete it.
         st.session_state["messages"] = [

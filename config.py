@@ -171,49 +171,6 @@ def load_system_prompt():
                 ]
             )
 
-def get_auction_end():
-    """Check if there is an auction underway and create a new one if there isn't.
-    """
-    try:
-        with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
-            with conn.cursor() as cur:
-                # Determine if there is an auction underway
-                cur.execute("""
-                    SELECT * FROM auctions
-                        WHERE ends >= NOW() + INTERVAL '3 minutes';
-                """)
-                auction_underway = cur.fetchone()
-
-                if auction_underway is None:
-                    # I want to initialize the main database here.
-                    starts = datetime.now(timezone.utc)
-                    ends = starts + timedelta(minutes = 5)
-                    cur.execute("""
-                            INSERT INTO auctions (id, starts, ends)
-                                VALUES (%s, %s, %s)
-                        """,
-                        (uuid.uuid4(), starts, ends)
-                    )
-                else:
-                    # End time is the third and last element of auction_underway.
-                    ends = auction_underway[-1]
-
-        return ends
-
-    # Create the auctions table if it does not exist
-    except psycopg.errors.UndefinedTable:
-        with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    CREATE TABLE auctions (
-                        id uuid PRIMARY KEY,
-                        starts timestamptz,
-                        ends timestamptz
-                    );
-                """)
-        return get_auction_end()
-    
-
 def initialize_database():
     names = [
             "Anderson, Thomas",
@@ -269,6 +226,59 @@ def initialize_database():
                 "INSERT INTO main (name, offer, contacted) VALUES (%s, %s, %s)",
                 list(zip(names, offers, contacted))
             )
+
+def create_auctions_table():
+    with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE auctions (
+                    id uuid PRIMARY KEY,
+                    starts timestamptz,
+                    ends timestamptz
+                );
+            """)
+
+def initialize_auction():
+    """Initialize the auction and offer tables if there is not an auction underway.
+
+    Returns:
+        The datetime when the auction ends.
+    """
+    try:
+        with psycopg.connect(os.getenv("DATABASE_URL")) as conn:
+            with conn.cursor() as cur:
+
+                # Determine if there is an auction underway
+                cur.execute("""
+                    SELECT * FROM auctions
+                        WHERE ends >= NOW() + INTERVAL '3 minutes';
+                """)
+                auction_underway = cur.fetchone()
+
+                if auction_underway is None:
+
+                    initialize_database()
+
+                    # Set new auction's start and end dates
+                    starts = datetime.now(timezone.utc)
+                    ends = starts + timedelta(minutes = 5)
+                    cur.execute("""
+                            INSERT INTO auctions (id, starts, ends)
+                                VALUES (%s, %s, %s)
+                        """,
+                        (uuid.uuid4(), starts, ends)
+                    )
+                else:
+                    # End time is the third and last element of auction_underway.
+                    ends = auction_underway[-1]
+
+        return ends
+
+    # Create the auctions table if it does not exist
+    except psycopg.errors.UndefinedTable:
+        create_auctions_table()
+
+        return initialize_auction()
 
 def load_customer_info():
     """ Select a random passenger who hasn't been contacted from main.
