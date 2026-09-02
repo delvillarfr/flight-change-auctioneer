@@ -157,19 +157,20 @@ def main():
             and (time.time() >= st.session_state["deadline"])
     ):
         results = config.get_auction_results()
-        customer_results = results.loc[
-            results["name"] == st.session_state["customer_id"],
-            ["offer", "winner", "compensation"]
-        ]
+        customer_mask = results["name"] == st.session_state["customer_id"]
+        customer_results = {}
+        for c in ["offer", "winner", "compensation"]:
+            customer_results[c] = results.loc[customer_mask, c].iloc[0]
 
         st.session_state["messages"].append({
             "role": "developer",
-            "content": """
-                The results are in.
-                Please communicate them.
-                Also ask the passenger to go to their Northwest Airlines portal to choose their seat.
-                Add in mock url https://northwestairlines.mock/seat-selection
-                """ + customer_results.to_string(),
+            "content": " ".join([
+                "Communicate the customer's results:",
+                str(customer_results),
+                "If the offer is None, the customer did not make an offer.",
+                "Also ask the passenger to go to their Northwest Airlines portal to choose their seat.",
+                "Add in mock url https://northwestairlines.mock/seat-selection"
+                ]),
             "visibility": "internal"
         })
 
@@ -188,7 +189,7 @@ def main():
     if st.session_state["results_df"] is not None:
         with st.chat_message("assistant"):
             st.markdown("You just played the role of **" + st.session_state["customer_id"] + "**.")
-            st.dataframe(st.session_state["results_df"].sort_values("offer"))
+            st.dataframe(st.session_state["results_df"].sort_values("offer").reset_index(drop = True))
 
 if __name__ == "__main__":
     main()
