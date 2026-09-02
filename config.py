@@ -32,7 +32,7 @@ def load_system_prompt():
 
     PROGRAM = """
     Our compensation program pays customers who volunteer for an itinerary change.
-    During a fixed three-minute window, customers may report an offer---the dollar compensation they need before accepting a flight change.
+    During a fixed offering window, customers may report an offer---the dollar compensation they need before accepting a flight change.
     They can see how much time they have left to place an offer at the top of their screen.
 
     When the offering window closes,
@@ -87,19 +87,20 @@ def load_system_prompt():
 
     <example 1>
     You:
-      Dear customer, at Northwest Airlines we are offering compensation to six volunteers who accept the following itinerary change:
-
-          Your itinerary: ...
-          New itinerary: ...
-
-      To volunteer and receive compensation, please tell us what dollar compensation you would need to accept the itinerary change within the next three minutes.
+      Dear passenger of flight 3742 to Bozeman Yellowstone (BZN), Northwest Airlines is offering compensation to six volunteers who accept the following itinerary change:
       
-      We will accept the volunteers who issue the six lowest offers and compensate them according to the seventh-lowest offer.
-      This means that, if selected, you will never be compensated below your offer, and will typically be compensated more.
-
-      My job is to help you make the most of this compensation program.
-
-      Do you have any questions or wish to make an offer?
+      | **Your itinerary** | **Alternative itinerary** |
+      | ------------------ | ------------------------- |
+      | Direct flight 3742 departing for Bozeman Yellowstone International (BZN) **tomorrow, 13:25 local** from Denver International (DEN) | Direct flight 4476 departing for Bozeman Yellowstone International (BZN) **tomorrow, 17:05 local** from Denver International (DEN) |
+      
+      To volunteer and receive compensation, please tell me what dollar compensation you would need to accept the itinerary change.
+      You can make an offer, revise it, or withdraw it within the time window available near the top of your screen.
+      
+      We plan to accept the volunteers who issue the six lowest offers and to compensate them according to the seventh-lowest offer.
+      If selected, you will typically be compensated more than you offered, never less.
+      
+      Would you like me to say how you can make the most of this compensation program?
+      Or would you prefer to make an offer?
 
     Customer:
       Okey-dokey, what should I offer if I just want to make the most money?
@@ -261,7 +262,7 @@ def initialize_auction():
 
                     # Set new auction's start and end dates
                     starts = datetime.now(timezone.utc)
-                    ends = starts + timedelta(minutes = 5)
+                    ends = starts + timedelta(minutes = 2)
                     cur.execute("""
                             INSERT INTO auctions (id, starts, ends)
                                 VALUES (%s, %s, %s)
@@ -362,7 +363,6 @@ def get_auction_results():
                 "compensation": np.float64
             })
 
-            # Run the auction
             participated = df["offer"].notna().values
             # We are running a reverse auction---send negative offers.
             outcome = uniform_price_auction.run(
@@ -423,26 +423,18 @@ TOOL_FUNCTIONS = {
 FIRST_MESSAGE = """
 Dear passenger of flight 3742 to Bozeman Yellowstone (BZN), Northwest Airlines is offering compensation to six volunteers who accept the following itinerary change:
 
-**Your itinerary**:
+| **Your itinerary** | **Alternative itinerary** |
+| ------------------ | ------------------------- |
+| Direct flight 3742 departing for Bozeman Yellowstone International (BZN) **tomorrow, 13:25 local** from Denver International (DEN) | Direct flight 4476 departing for Bozeman Yellowstone International (BZN) **tomorrow, 17:05 local** from Denver International (DEN) |
 
-* Departs **tomorrow, 13:25 local** from Denver International (DEN).
-* Arrives to Bozeman Yellowstone International (BZN) at 15:09 local.
-* Flight number TW 3742.
+To volunteer and receive compensation, please tell me what dollar compensation you would need to accept the itinerary change.
+You can make an offer, revise it, or withdraw it within the time window available near the top of your screen.
 
-**Alternative itinerary**:
+We plan to accept the volunteers who issue the six lowest offers and to compensate them according to the seventh-lowest offer.
+If selected, you will typically be compensated more than you offered, never less.
 
-* Departs **tomorrow, 17:05 local** from Denver International (DEN).
-* Arrives to Bozeman Yellowstone International (BZN) at 18:49 local.
-* Flight number TW 4476.
-
-To volunteer and receive compensation, **please tell us what dollar compensation you would need to accept the itinerary change within the next three minutes**.
-
-We will accept the volunteers who issue the six lowest offers and compensate them according to the seventh-lowest offer.
-This means that, if selected, you will typically be compensated more than you offered, never less.
-
-My job is to help you make the most of this compensation program.
-
-Do you have any questions or wish to make an offer?
+Would you like me to say how you can make the most of this compensation program?
+Or would you prefer to make an offer?
 """
 
 # Pin the countdown to the top of the viewport so it stays visible however long
