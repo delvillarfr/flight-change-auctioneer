@@ -262,7 +262,7 @@ def initialize_auction():
 
                     # Set new auction's start and end dates
                     starts = datetime.now(timezone.utc)
-                    ends = starts + timedelta(minutes = 2)
+                    ends = starts + timedelta(minutes = 3)
                     cur.execute("""
                             INSERT INTO auctions (id, starts, ends)
                                 VALUES (%s, %s, %s)
